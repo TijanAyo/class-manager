@@ -31,12 +31,15 @@ model User {
   streetAddress String? @db.VarChar(180)
   phoneNumber   String? @db.VarChar(50)
 
-  guardianFirstName   String @db.VarChar(50)
-  guardianLastName    String @db.VarChar(50)
-  guardianPhoneNumber String @db.VarChar(50)
-  guardianAddress     String @db.VarChar(50)
+  guardianFirstName   String? @db.VarChar(50)
+  guardianLastName    String? @db.VarChar(50)
+  guardianPhoneNumber String? @db.VarChar(50)
+  guardianAddress     String? @db.VarChar(50)
 
   isAccountSuspended Boolean @default(false)
+  isEmailVerified    Boolean @default(false)
+
+  accountStatus String? @default("Pending") @db.VarChar(50)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
