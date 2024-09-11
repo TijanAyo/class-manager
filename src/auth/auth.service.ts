@@ -9,7 +9,6 @@ export class AuthService {
 
   async register(payload: registerPayload) {
     try {
-      // check if the user email passed is not associated with any other user
       const userExist = await this.userRepository.findByEmail(
         payload.emailAddress,
       );
@@ -17,17 +16,29 @@ export class AuthService {
       if (userExist) {
         throw new BadRequestException(
           AppResponse.Error(
-            `Email-address is already associated with another user`,
+            `The email provided is already associated with another user`,
             ErrorMessage.BAD_REQUEST,
           ),
         );
       }
 
-      // if the role of the user is `Student` the guardian field can not be undefined
-      // hash the user password
-      // store user into database
+      const createNewUser = await this.userRepository.createNewUser(payload);
 
-      // send an `email-verification` mail to the provided email address
+      if (!createNewUser) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `An unexpected error occurred while create a new user`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      // TODO: send an `email-verification` mail to the provided email address
+
+      return AppResponse.Ok(
+        null,
+        'Account created successfully, kindly check your inbox and verify your email address',
+      );
     } catch (e) {
       console.error(`registerError: Unable to register user`);
       throw e;

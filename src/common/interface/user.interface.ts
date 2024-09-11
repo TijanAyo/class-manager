@@ -2,14 +2,14 @@ export interface registerPayload {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  role: string;
+  role?: string;
   password: string;
   age: number;
   gender: string;
-  guardianInformation: GuardianInfomation;
+  guardianInformation?: GuardianInformation;
 }
 
-interface GuardianInfomation {
+interface GuardianInformation {
   guardianFirstName?: string;
   guardianLastName?: string;
   guardianPhoneNumber?: string;

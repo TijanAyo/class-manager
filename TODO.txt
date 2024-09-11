@@ -3,6 +3,7 @@ CLASS MANAGER API
 
 Shared functionality 
 - Student and Teachers can sign up into the application
+- Student and Teachers can verify their email address
 - Student and Teachers can login into the application
 - Student and Teachers can perform a reset password for their account
 - Student and Teachers can change their password
