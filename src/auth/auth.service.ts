@@ -8,15 +8,19 @@ import { loginPayload, registerPayload } from '../common/interface';
 import { AppResponse, ErrorMessage } from '../common/helpers';
 import { verifyPasswordHash } from '../common/utils';
 import { JwtService } from '@nestjs/jwt';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userRepository: UserRepositoryService,
+    private userRepository: UserRepositoryService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
-  async register(payload: registerPayload) {
+  async register(
+    payload: registerPayload,
+  ): Promise<{ data: null; message: string; success: boolean }> {
     try {
       const userExist = await this.userRepository.findByEmail(
         payload.emailAddress,
@@ -43,18 +47,29 @@ export class AuthService {
       }
 
       // TODO: send an `email-verification` mail to the provided email address
+      await this.mailService.sendEmailConfirmation(
+        payload.emailAddress,
+        payload.firstName,
+        `random_token`,
+      );
 
       return AppResponse.Ok(
         null,
         'Account created successfully, kindly check your inbox and verify your email address',
       );
     } catch (e) {
-      console.error(`registerError: Unable to register user`);
+      console.error(
+        `registerError: Unable to register user`,
+        e.message,
+        e.stack,
+      );
       throw e;
     }
   }
 
-  async login(payload: loginPayload) {
+  async login(
+    payload: loginPayload,
+  ): Promise<{ data: string; message: string; success: boolean }> {
     try {
       const userExist = await this.userRepository.findByEmail(
         payload.emailAddress,

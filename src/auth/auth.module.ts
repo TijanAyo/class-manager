@@ -4,10 +4,12 @@ import { AuthService } from './auth.service';
 import { RepositoryModule } from '../repository';
 import { JwtModule } from '@nestjs/jwt';
 import { constants } from '../common/utils/constant';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     RepositoryModule,
+    MailModule,
     JwtModule.register({
       global: true,
       secret: constants.secret,
