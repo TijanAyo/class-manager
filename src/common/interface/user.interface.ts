@@ -15,3 +15,8 @@ interface GuardianInformation {
   guardianPhoneNumber?: string;
   guardianAddress?: string;
 }
+
+export interface loginPayload {
+  emailAddress: string;
+  password: string;
+}

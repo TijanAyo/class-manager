@@ -1,11 +1,20 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserRepositoryService } from '../repository/user-repository';
-import { registerPayload } from '../common/interface';
+import { loginPayload, registerPayload } from '../common/interface';
 import { AppResponse, ErrorMessage } from '../common/helpers';
+import { verifyPasswordHash } from '../common/utils';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userRepository: UserRepositoryService) {}
+  constructor(
+    private readonly userRepository: UserRepositoryService,
+    private jwtService: JwtService,
+  ) {}
 
   async register(payload: registerPayload) {
     try {
@@ -45,7 +54,46 @@ export class AuthService {
     }
   }
 
-  async login() {}
+  async login(payload: loginPayload) {
+    try {
+      const userExist = await this.userRepository.findByEmail(
+        payload.emailAddress,
+      );
+
+      if (!userExist) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `Invalid credentials, check input and try again`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      const isPasswordValid = await verifyPasswordHash(
+        userExist.password,
+        payload.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException(
+          AppResponse.Error(
+            `Invalid credentials, check input and try again`,
+            ErrorMessage.UNAUTHORIZED,
+          ),
+        );
+      }
+
+      const accessToken = await this.jwtService.signAsync({
+        sub: userExist.id,
+        email: userExist.emailAddress,
+      });
+
+      return AppResponse.Ok(accessToken, `Authorization successful`);
+    } catch (e) {
+      console.error(`login error: Unable to authorize user`);
+      throw e;
+    }
+  }
 
   async forgotPassword() {}
 }

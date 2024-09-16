@@ -41,7 +41,7 @@ enum Role {
   Teacher = 'Teacher',
 }
 
-export class createUserDto {
+export class registerDto {
   @IsString()
   @IsNotEmpty()
   firstName: string;
