@@ -20,3 +20,12 @@ export interface loginPayload {
   emailAddress: string;
   password: string;
 }
+
+export interface forgotPasswordPayload {
+  emailAddress: string;
+}
+
+export interface sendOTPPayload {
+  emailAddress: string;
+  reason: string;
+}

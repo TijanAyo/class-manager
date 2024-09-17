@@ -4,11 +4,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserRepositoryService } from '../repository/user-repository';
-import { loginPayload, registerPayload } from '../common/interface';
+import {
+  loginPayload,
+  registerPayload,
+  sendOTPPayload,
+} from '../common/interface';
 import { AppResponse, ErrorMessage } from '../common/helpers';
-import { verifyPasswordHash } from '../common/utils';
+import { generateRandomOTP, verifyPasswordHash } from '../common/utils';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from '../mail/mail.service';
+import { RedisRepositoryService } from '../repository/redis-repository';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +21,7 @@ export class AuthService {
     private userRepository: UserRepositoryService,
     private jwtService: JwtService,
     private mailService: MailService,
+    private redisService: RedisRepositoryService,
   ) {}
 
   async register(
@@ -46,7 +52,7 @@ export class AuthService {
         );
       }
 
-      // TODO: send an `email-verification` mail to the provided email address
+      // TODO: Put this inside a queue
       await this.mailService.sendEmailConfirmation(
         payload.emailAddress,
         payload.firstName,
@@ -106,6 +112,43 @@ export class AuthService {
       return AppResponse.Ok(accessToken, `Authorization successful`);
     } catch (e) {
       console.error(`login error: Unable to authorize user`);
+      throw e;
+    }
+  }
+
+  async sendOTP(payload: sendOTPPayload) {
+    try {
+      const userExist = await this.userRepository.findByEmail(
+        payload.emailAddress,
+      );
+
+      if (!userExist) {
+        return AppResponse.Ok(
+          null,
+          `If email exist you will receive a code in your mail`,
+        );
+      } else {
+        const OTPCODE = generateRandomOTP(6);
+        await this.redisService.storeOTP(
+          payload.emailAddress,
+          OTPCODE,
+          payload.reason,
+        );
+
+        // TODO: Put this function inside of a queue
+        await this.mailService.sendOTPCode(userExist.emailAddress, OTPCODE);
+
+        return AppResponse.Ok(
+          null,
+          `If email exist you will receive a code in your mail`,
+        );
+      }
+    } catch (e) {
+      console.error(
+        `sendOTP error: Unable to generate / store OTP`,
+        e.message,
+        e.stack,
+      );
       throw e;
     }
   }

@@ -73,4 +73,21 @@ export class MailService {
       throw e;
     }
   }
+
+  async sendOTPCode(userEmail: string, otp: string): Promise<void> {
+    try {
+      // path to the template file
+      const templatePath = join(__dirname, 'templates', 'send-otp.hbs');
+
+      // Compile the Handlebars template with the provided context
+      const html = this.compileTemplate(templatePath, {
+        otp,
+      });
+
+      await this.sendEmail(userEmail, `Verification Code`, html);
+    } catch (e) {
+      console.error(`sendOTPCode error`, e.message, e.stack);
+      throw e;
+    }
+  }
 }
