@@ -6,7 +6,7 @@ Shared functionality
 - Student and Teachers can verify their email address
 - Student and Teachers can login into the application --- DONE
 - Student and Teachers can perform a reset password for their account
-- Student and Teachers can change their password
+- Student and Teachers can change their password (forgot-password) --- DONE
 - Student and Teachers can view and edit their profile
 - Student and Teachers can upload a profile image
 
