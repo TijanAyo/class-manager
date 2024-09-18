@@ -197,11 +197,15 @@ export class AuthService {
 
       // Validate OTP so i can't be used again
       await this.redisService.markOTPHasValidated(
-        payload.emailAddress,
+        userExist.emailAddress,
         `FORGOT_PASSWORD`,
       );
 
-      // TODO: Add an email trigger here to be sent when password has changed successfully
+      // TODO: Add this into a queue system
+      await this.mailService.sendPasswordUpdateNotice(
+        userExist.emailAddress,
+        userExist.firstName,
+      );
 
       return AppResponse.Ok(
         null,

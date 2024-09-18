@@ -38,7 +38,7 @@ export class RedisRepositoryService {
         this.client.HGET(redisKey, 'otpExpiresIn'),
       ]);
 
-      console.log(otp, isValidated, otpExpiresIn);
+      // console.log(otp, isValidated, otpExpiresIn);
 
       return {
         otpCode: otp ?? null,

@@ -90,4 +90,28 @@ export class MailService {
       throw e;
     }
   }
+
+  async sendPasswordUpdateNotice(
+    userEmail: string,
+    userName: string,
+  ): Promise<void> {
+    try {
+      // path to the template file
+      const templatePath = join(__dirname, 'templates', 'password-updated.hbs');
+
+      // Compile the Handlebars template with the provided context
+      const html = this.compileTemplate(templatePath, {
+        name: userName,
+      });
+
+      await this.sendEmail(userEmail, `Password Update Successful`, html);
+    } catch (e) {
+      console.error(
+        `sendPasswordUpdateNotice error: Unable to send password update mail`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
 }
