@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { RedisService } from '../../redis';
+import { AppResponse, ErrorMessage } from 'src/common/helpers';
 
 @Injectable()
 export class RedisRepositoryService {
@@ -16,7 +17,7 @@ export class RedisRepositoryService {
       await this.client.HSET(redisKey, {
         otp: otp_code,
         isValidated: 'false',
-        otpExpiresIn: String(otpExpiresIn),
+        otpExpiresIn: otpExpiresIn.toString(),
       });
 
       // redis hash TTL
@@ -27,7 +28,97 @@ export class RedisRepositoryService {
     }
   }
 
-  private async retrieveOTP() {}
+  private async retrieveOTP(email: string, reason: string) {
+    try {
+      const redisKey = `${reason}:${email}`;
 
-  async validateOTP() {}
+      const [otp, isValidated, otpExpiresIn] = await Promise.all([
+        this.client.HGET(redisKey, 'otp'),
+        this.client.HGET(redisKey, 'isValidated'),
+        this.client.HGET(redisKey, 'otpExpiresIn'),
+      ]);
+
+      console.log(otp, isValidated, otpExpiresIn);
+
+      return {
+        otpCode: otp ?? null,
+        isValidated: isValidated ?? null,
+        otpExpiresIn: otpExpiresIn ?? null,
+      };
+    } catch (e) {
+      console.error(
+        `retrieveOTP error: Unable to retrived values from hash`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
+
+  async validateOTP(email: string, providedOTP: string, reason: string) {
+    try {
+      const { otpCode, isValidated, otpExpiresIn } = await this.retrieveOTP(
+        email,
+        reason,
+      );
+      const currentTime = Date.now();
+      const otpExpiry = parseInt(otpExpiresIn, 10);
+
+      if (isValidated === 'true') {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `Invalid OTP code, code has been utilized`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      if (currentTime > otpExpiry) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `The provided code has expired`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      if (otpCode !== providedOTP) {
+        throw new BadRequestException(
+          AppResponse.Error(`Invalid OTP code`, ErrorMessage.BAD_REQUEST),
+        );
+      }
+    } catch (e) {
+      console.error(
+        `validateOTP error: Unable to validate otp`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
+
+  async markOTPHasValidated(email: string, reason: string) {
+    try {
+      const redisKey = `${reason}:${email}`;
+      const updateField = await this.client.HSET(redisKey, {
+        isValidated: 'true',
+      });
+
+      if (updateField !== 0) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `OTP could not be marked has validated`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+    } catch (e) {
+      console.error(
+        `markOTPHasValidated error: Unable to mark otp has validated`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
 }

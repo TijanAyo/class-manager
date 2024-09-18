@@ -63,4 +63,20 @@ export class UserRepositoryService {
       );
     }
   }
+
+  async updatePassword(email: string, password: string) {
+    try {
+      return await this.prismaService.user.update({
+        data: { password },
+        where: { emailAddress: email },
+      });
+    } catch (e) {
+      console.error(
+        `updatePassword error: Unable to update password`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
 }

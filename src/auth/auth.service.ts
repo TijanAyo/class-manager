@@ -5,12 +5,17 @@ import {
 } from '@nestjs/common';
 import { UserRepositoryService } from '../repository/user-repository';
 import {
+  forgotPasswordPayload,
   loginPayload,
   registerPayload,
   sendOTPPayload,
 } from '../common/interface';
 import { AppResponse, ErrorMessage } from '../common/helpers';
-import { generateRandomOTP, verifyPasswordHash } from '../common/utils';
+import {
+  generateRandomOTP,
+  hashPassword,
+  verifyPasswordHash,
+} from '../common/utils';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from '../mail/mail.service';
 import { RedisRepositoryService } from '../repository/redis-repository';
@@ -153,5 +158,62 @@ export class AuthService {
     }
   }
 
-  async forgotPassword() {}
+  async forgotPassword(payload: forgotPasswordPayload) {
+    try {
+      const userExist = await this.userRepository.findByEmail(
+        payload.emailAddress,
+      );
+
+      if (!userExist) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `Email not found. kindly check input and try again`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      // Check if OTP is valid or has expired
+      await this.redisService.validateOTP(
+        userExist.emailAddress,
+        payload.otp,
+        `FORGOT_PASSWORD`,
+      );
+
+      if (payload.newPassword !== payload.confirmPassword) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `Password do not match. Please try again`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      const hashedPassword = await hashPassword(payload.confirmPassword);
+      await this.userRepository.updatePassword(
+        userExist.emailAddress,
+        hashedPassword,
+      );
+
+      // Validate OTP so i can't be used again
+      await this.redisService.markOTPHasValidated(
+        payload.emailAddress,
+        `FORGOT_PASSWORD`,
+      );
+
+      // TODO: Add an email trigger here to be sent when password has changed successfully
+
+      return AppResponse.Ok(
+        null,
+        `Your password has been updated successfully`,
+      );
+    } catch (e) {
+      console.error(
+        `forgotPassword error: Unable to reset password`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
 }

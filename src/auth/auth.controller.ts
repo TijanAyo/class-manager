@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { registerDto, loginDto, sendOTPDto } from './dtos';
+import { registerDto, loginDto, sendOTPDto, forgotPasswordDto } from './dtos';
 
 @Controller('auth')
 export class AuthController {
@@ -25,5 +25,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  async forgotPassword() {}
+  async forgotPassword(@Body() payload: forgotPasswordDto) {
+    return await this.authService.forgotPassword(payload);
+  }
 }

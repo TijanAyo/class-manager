@@ -21,11 +21,14 @@ export interface loginPayload {
   password: string;
 }
 
-export interface forgotPasswordPayload {
-  emailAddress: string;
-}
-
 export interface sendOTPPayload {
   emailAddress: string;
   reason: string;
+}
+
+export interface forgotPasswordPayload {
+  emailAddress: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
 }
