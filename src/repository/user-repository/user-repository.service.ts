@@ -8,6 +8,26 @@ import { hashPassword } from '../../common/utils';
 export class UserRepositoryService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  async findById(id: string) {
+    try {
+      return await this.prismaService.user.findUnique({
+        where: { id },
+      });
+    } catch (e) {
+      console.error(
+        `findById Error: Unable to find user by ID`,
+        e.message,
+        e.stack,
+      );
+      throw new InternalServerErrorException(
+        AppResponse.Error(
+          `An unexpected error has occurred`,
+          ErrorMessage.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    }
+  }
+
   async findByEmail(email: string) {
     try {
       return await this.prismaService.user.findUnique({
@@ -15,7 +35,7 @@ export class UserRepositoryService {
       });
     } catch (e) {
       console.error(
-        `findByEmailError: Unable to find user with email`,
+        `findByEmail Error: Unable to find user with email`,
         e.message,
         e.stack,
       );
@@ -34,7 +54,7 @@ export class UserRepositoryService {
         data: {
           firstName: payload.firstName,
           lastName: payload.lastName,
-          emailAddress: payload.emailAddress,
+          emailAddress: payload.emailAddress.toLowerCase(),
           password: await hashPassword(payload.password),
           gender: payload.gender,
           age: payload.age,
@@ -51,7 +71,7 @@ export class UserRepositoryService {
       });
     } catch (e) {
       console.error(
-        `createNewUserError: Unable to create new user`,
+        `createNewUser Error: Unable to create new user`,
         e.message,
         e.stack,
       );
@@ -72,11 +92,37 @@ export class UserRepositoryService {
       });
     } catch (e) {
       console.error(
-        `updatePassword error: Unable to update password`,
+        `updatePassword Error: Unable to update password`,
         e.message,
         e.stack,
       );
-      throw e;
+      throw new InternalServerErrorException(
+        AppResponse.Error(
+          `An unexpected error has occurred`,
+          ErrorMessage.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    }
+  }
+
+  async updateIsEmailVerified(email: string) {
+    try {
+      return await this.prismaService.user.update({
+        data: { isEmailVerified: true },
+        where: { emailAddress: email },
+      });
+    } catch (e) {
+      console.error(
+        `updateIsEmailVerified Error: Unable to update isEmailVerifiedField`,
+        e.message,
+        e.stack,
+      );
+      throw new InternalServerErrorException(
+        AppResponse.Error(
+          `An unexpected error has occurred`,
+          ErrorMessage.INTERNAL_SERVER_ERROR,
+        ),
+      );
     }
   }
 }

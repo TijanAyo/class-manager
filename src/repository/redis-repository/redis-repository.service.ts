@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { RedisService } from '../../redis';
 import { AppResponse, ErrorMessage } from 'src/common/helpers';
 
@@ -40,6 +44,16 @@ export class RedisRepositoryService {
 
       // console.log(otp, isValidated, otpExpiresIn);
 
+      /* return otp != null ||
+        isValidated !== null ||
+        otpExpiresIn !== null 
+        ? {
+            otpCode: otp ?? null,
+            isValidated: isValidated ?? null,
+            otpExpiresIn: otpExpiresIn ?? null,
+          } as { otpCode: string, isValidated: string, otpExpiresIn: string }
+        : null; */
+
       return {
         otpCode: otp ?? null,
         isValidated: isValidated ?? null,
@@ -61,6 +75,14 @@ export class RedisRepositoryService {
         email,
         reason,
       );
+
+      if (otpCode === null || isValidated === null || otpExpiresIn === null) {
+        console.log(`The redis key was not found resulting in this error`);
+        throw new NotFoundException(
+          AppResponse.Error(`OTP not found`, ErrorMessage.NOT_FOUND),
+        );
+      }
+
       const currentTime = Date.now();
       const otpExpiry = parseInt(otpExpiresIn, 10);
 

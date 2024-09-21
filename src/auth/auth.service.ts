@@ -143,10 +143,7 @@ export class AuthService {
         // TODO: Put this function inside of a queue
         await this.mailService.sendOTPCode(userExist.emailAddress, OTPCODE);
 
-        return AppResponse.Ok(
-          null,
-          `If email exist you will receive a code in your mail`,
-        );
+        return AppResponse.Ok(null, `OTP sent`);
       }
     } catch (e) {
       console.error(
