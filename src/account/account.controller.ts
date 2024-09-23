@@ -7,7 +7,7 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { AccountService } from './account.service';
-import { verifyEmailDto } from './dto';
+import { editProfileDto, verifyEmailDto } from './dto';
 import { AuthorizeGuard } from '../common/guards';
 
 @Controller('account')
@@ -22,7 +22,13 @@ export class AccountController {
     return await this.accountService.verifyEmailAddress(user.sub, payload);
   }
 
-  async editProfile() {}
+  @Post('edit-profile')
+  @UseGuards(AuthorizeGuard)
+  @HttpCode(200)
+  async editProfile(@Body() payload: editProfileDto, @Req() req: any) {
+    const user = req.user;
+    return await this.accountService.editProfile(user.sub, payload);
+  }
 
   async uploadProfileImage() {}
 

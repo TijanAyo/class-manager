@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppResponse, ErrorMessage } from '../../common/helpers';
-import { registerPayload } from '../../common/interface';
+import { editProfilePayload, registerPayload } from '../../common/interface';
 import { hashPassword } from '../../common/utils';
 
 @Injectable()
@@ -114,6 +114,27 @@ export class UserRepositoryService {
     } catch (e) {
       console.error(
         `updateIsEmailVerified Error: Unable to update isEmailVerifiedField`,
+        e.message,
+        e.stack,
+      );
+      throw new InternalServerErrorException(
+        AppResponse.Error(
+          `An unexpected error has occurred`,
+          ErrorMessage.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    }
+  }
+
+  async updateProfileInfo(email: string, payloads: editProfilePayload) {
+    try {
+      return await this.prismaService.user.update({
+        data: payloads,
+        where: { emailAddress: email },
+      });
+    } catch (e) {
+      console.error(
+        `updateProfileInfo Error: Unable to update this user profileInfo`,
         e.message,
         e.stack,
       );

@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { verifyEmailAddressPayload } from '../common/interface';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import {
+  editProfilePayload,
+  verifyEmailAddressPayload,
+} from '../common/interface';
 import { RedisRepositoryService } from '../repository/redis-repository';
 import { UserRepositoryService } from '../repository/user-repository';
 import { AppResponse, ErrorMessage } from '../common/helpers';
@@ -54,7 +61,60 @@ export class AccountService {
     }
   }
 
-  async editProfile() {}
+  async editProfile(userId: string, payload: editProfilePayload) {
+    try {
+      const { emailAddress, role } = await this.userRepository.findById(userId);
+      const allowedFields = {
+        Teacher: [
+          'firstName',
+          'lastName',
+          'bio',
+          'gender',
+          'city',
+          'state',
+          'streetAddress',
+          'phoneNumber',
+        ],
+        Student: ['firstName', 'lastName', 'bio', 'gender', 'phoneNumber'],
+      };
+
+      const invalidFields = Object.keys(payload).filter(
+        (field) => !allowedFields[role].includes(field),
+      );
+
+      if (invalidFields.length > 0) {
+        throw new ForbiddenException(
+          AppResponse.Error(
+            `You are not allowed to update the following fields: [${invalidFields.join(', ')}] as a ${role}`,
+            ErrorMessage.FORBIDDEN,
+          ),
+        );
+      }
+
+      const updateProfile = await this.userRepository.updateProfileInfo(
+        emailAddress,
+        payload,
+      );
+
+      if (!updateProfile) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `An unexpected error has occurred, profile could not be updated`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      return AppResponse.Ok(null, `Your profile has been updated successfully`);
+    } catch (e) {
+      console.error(
+        `editProfile Error: Unable to verify email address`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
+  }
 
   async uploadProfileImage() {
     // Would love to make use of AWS s3 bucket to make this possible
