@@ -13,3 +13,9 @@ export interface editProfilePayload {
   streetAddress?: string;
   phoneNumber?: string;
 }
+
+export interface changePasswordPayload {
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+}

@@ -4,18 +4,22 @@ import {
   Injectable,
 } from '@nestjs/common';
 import {
+  changePasswordPayload,
   editProfilePayload,
   verifyEmailAddressPayload,
 } from '../common/interface';
 import { RedisRepositoryService } from '../repository/redis-repository';
 import { UserRepositoryService } from '../repository/user-repository';
 import { AppResponse, ErrorMessage } from '../common/helpers';
+import { hashPassword } from '../common/utils';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AccountService {
   constructor(
     private redisService: RedisRepositoryService,
     private userRepository: UserRepositoryService,
+    private mailService: MailService,
   ) {}
 
   async verifyEmailAddress(userId: string, payload: verifyEmailAddressPayload) {
@@ -120,9 +124,51 @@ export class AccountService {
     // Would love to make use of AWS s3 bucket to make this possible
   }
 
-  async changePassword() {
-    // Can only change password if
-    // 1. email is verified
-    // hash password and store in the database
+  async changePassword(userId: string, payload: changePasswordPayload) {
+    try {
+      const { emailAddress, firstName } =
+        await this.userRepository.findById(userId);
+
+      // Validate OTP provided by the user
+      await this.redisService.validateOTP(
+        emailAddress,
+        payload.otp,
+        `CHANGE_PASSWORD`,
+      );
+
+      if (payload.newPassword !== payload.confirmPassword) {
+        throw new BadRequestException(
+          AppResponse.Error(
+            `Password does not match, kindly check input and try again`,
+            ErrorMessage.BAD_REQUEST,
+          ),
+        );
+      }
+
+      const hashedPassword = await hashPassword(payload.confirmPassword);
+
+      await this.userRepository.updatePassword(emailAddress, hashedPassword);
+
+      // Validate OTP so it cannot be used again
+      await this.redisService.markOTPHasValidated(
+        emailAddress,
+        `CHANGE_PASSWORD`,
+      );
+
+      // TODO: Put this inside of a queue
+      await this.mailService.sendPasswordUpdateNotice(emailAddress, firstName);
+
+      return AppResponse.Ok(
+        null,
+        `Your password has been updated successfully`,
+      );
+    } catch (e) {
+      console.error(
+        `changePassword Error: Unable to change password`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
   }
 }

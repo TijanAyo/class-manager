@@ -5,10 +5,11 @@ import {
   UseGuards,
   Req,
   HttpCode,
+  Patch,
 } from '@nestjs/common';
 import { AccountService } from './account.service';
-import { editProfileDto, verifyEmailDto } from './dto';
-import { AuthorizeGuard } from '../common/guards';
+import { changePasswordDto, editProfileDto, verifyEmailDto } from './dto';
+import { AuthorizeGuard, PermissionGuard } from '../common/guards';
 
 @Controller('account')
 export class AccountController {
@@ -22,15 +23,22 @@ export class AccountController {
     return await this.accountService.verifyEmailAddress(user.sub, payload);
   }
 
-  @Post('edit-profile')
-  @UseGuards(AuthorizeGuard)
+  @Patch('edit-profile')
+  @UseGuards(AuthorizeGuard, PermissionGuard)
   @HttpCode(200)
   async editProfile(@Body() payload: editProfileDto, @Req() req: any) {
     const user = req.user;
     return await this.accountService.editProfile(user.sub, payload);
   }
 
+  @Post('upload-image')
   async uploadProfileImage() {}
 
-  async changePassword() {}
+  @Patch('change-password')
+  @UseGuards(AuthorizeGuard, PermissionGuard)
+  @HttpCode(200)
+  async changePassword(@Body() payload: changePasswordDto, @Req() req: any) {
+    const user = req.user;
+    return await this.accountService.changePassword(user.sub, payload);
+  }
 }
