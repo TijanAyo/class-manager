@@ -19,3 +19,10 @@ export interface changePasswordPayload {
   newPassword: string;
   confirmPassword: string;
 }
+
+export interface putCommandParams {
+  Bucket: string;
+  Key: string;
+  Body: Buffer;
+  ContentType: string;
+}

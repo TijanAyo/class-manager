@@ -9,4 +9,9 @@ export const constants = {
   REDIS_HOST: String(process.env.REDIS_HOST),
   REDIS_PASSWORD: String(process.env.REDIS_PASSWORD),
   REDIS_PORT: Number(process.env.REDIS_PORT),
+
+  AWS_BUCKET_NAME: String(process.env.AWS_BUCKET_NAME),
+  AWS_BUCKET_REGION: String(process.env.AWS_BUCKET_REGION),
+  AWS_BUCKET_ACCESS_KEY: String(process.env.AWS_BUCKET_ACCESS_KEY),
+  AWS_BUCKET_SECRET_KEY: String(process.env.AWS_BUCKET_SECRET_KEY),
 };

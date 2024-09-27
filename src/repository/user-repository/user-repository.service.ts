@@ -146,4 +146,25 @@ export class UserRepositoryService {
       );
     }
   }
+
+  async updateProfileImage(email: string, url: string) {
+    try {
+      return await this.prismaService.user.update({
+        data: { profileImage: url },
+        where: { emailAddress: email },
+      });
+    } catch (e) {
+      console.error(
+        `updateProfileImage Error: Unable to update profile image`,
+        e.message,
+        e.stack,
+      );
+      throw new InternalServerErrorException(
+        AppResponse.Error(
+          `An unexpected error has occurred`,
+          ErrorMessage.INTERNAL_SERVER_ERROR,
+        ),
+      );
+    }
+  }
 }

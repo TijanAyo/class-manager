@@ -6,13 +6,22 @@ import {
 import {
   changePasswordPayload,
   editProfilePayload,
+  putCommandParams,
   verifyEmailAddressPayload,
 } from '../common/interface';
 import { RedisRepositoryService } from '../repository/redis-repository';
 import { UserRepositoryService } from '../repository/user-repository';
-import { AppResponse, ErrorMessage } from '../common/helpers';
+import {
+  addItemToBucket,
+  AppResponse,
+  deleteItemFromBucket,
+  ErrorMessage,
+  generateImageURLFromRandomName,
+  grabImageNameFromUrl,
+} from '../common/helpers';
 import { hashPassword } from '../common/utils';
 import { MailService } from '../mail/mail.service';
+import * as sharp from 'sharp';
 
 @Injectable()
 export class AccountService {
@@ -120,8 +129,44 @@ export class AccountService {
     }
   }
 
-  async uploadProfileImage() {
-    // Would love to make use of AWS s3 bucket to make this possible
+  async uploadProfileImage(userId: string, payload: putCommandParams) {
+    try {
+      const user = await this.userRepository.findById(userId);
+
+      if (user.profileImage !== undefined || user.profileImage !== null) {
+        const imageName = await grabImageNameFromUrl(user.profileImage);
+        await deleteItemFromBucket(imageName, 'photos');
+      }
+
+      const buffer = await sharp(payload.Body).resize(200, 200).toBuffer();
+
+      const response = {
+        Bucket: payload.Bucket,
+        Key: payload.Key,
+        Body: buffer,
+        ContentType: payload.ContentType,
+      };
+
+      await addItemToBucket(response, 'photos');
+      const presignedUrl = await generateImageURLFromRandomName(payload.Key);
+
+      await this.userRepository.updateProfileImage(
+        user.emailAddress,
+        presignedUrl,
+      );
+
+      return AppResponse.Ok(
+        null,
+        `Profile image has been updated successfully`,
+      );
+    } catch (e) {
+      console.error(
+        `uploadProfileImage Error: Unable to upload profile image`,
+        e.message,
+        e.stack,
+      );
+      throw e;
+    }
   }
 
   async changePassword(userId: string, payload: changePasswordPayload) {
